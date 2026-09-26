@@ -1,0 +1,9 @@
+# Plugin cần cho pipeline CI/CD này.
+# Cài bằng jenkins-plugin-cli (tự fallback sang archives.jenkins.io nếu mirror lỗi).
+workflow-aggregator
+git
+credentials-binding
+plain-credentials
+timestamper
+ws-cleanup
+pipeline-stage-view

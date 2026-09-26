@@ -5,7 +5,7 @@ from state_management import Page, authenticate_user
 
 
 def home_page():
-    st.title("💬 AI-Powered Chatbot")
+    st.title("💬 AI-Chatbot")
     if not st.session_state["user"].is_authenticated:
         st.markdown(
             """
