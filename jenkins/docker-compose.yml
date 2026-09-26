@@ -1,0 +1,22 @@
+# Chạy Jenkins trên máy local bằng Docker.
+# Dùng: cd jenkins && docker compose up -d --build
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: langgraph-jenkins:lts
+    container_name: jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"     # Giao diện web Jenkins -> http://localhost:8080
+      - "50000:50000"   # Cổng cho agent (để mặc định)
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      # Cho Jenkins điều khiển Docker của máy host (để build & deploy app):
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+
+volumes:
+  jenkins_home:

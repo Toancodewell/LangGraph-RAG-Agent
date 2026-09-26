@@ -7,6 +7,22 @@ from loguru import logger
 from pydantic import BaseModel
 
 
+def content_to_text(content: Any) -> str:
+    """Extract plain text from a message content that may be a string or a list of
+    content blocks (langchain-core 1.x returns list-of-blocks for Gemini 3.x)."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("text"):
+                parts.append(block["text"])
+        return "".join(parts)
+    return str(content) if content else ""
+
+
 class PromptInput(BaseModel):
     prompt: str
     model_name: str
@@ -38,7 +54,10 @@ class ChatStreamResponse(StreamingResponse):
     def _handle_messages_stream(self, chunk: tuple[AIMessageChunk | AIMessage, Any]) -> str:
         message = chunk[0]
         if isinstance(message, (AIMessageChunk, AIMessage)) and message.content:
-            response = {"type": "llm_chunk", "content": str(message.content)}
+            text = content_to_text(message.content)
+            if not text:
+                return ""
+            response = {"type": "llm_chunk", "content": text}
             return json.dumps(response) + "\n"
         return ""
 
@@ -56,9 +75,9 @@ class ChatStreamResponse(StreamingResponse):
                         yield json.dumps(response) + "\n"
 
             elif isinstance(message, ToolMessage):
-                response = {"type": "tool_result", "name": message.name, "content": message.content}
+                response = {"type": "tool_result", "name": message.name, "content": content_to_text(message.content)}
                 yield json.dumps(response) + "\n"
 
             else:
-                response = {"type": message.type, "content": message.content}
+                response = {"type": message.type, "content": content_to_text(message.content)}
                 logger.debug(f"Unknown message type: {message.type} - {json.dumps(response)}")

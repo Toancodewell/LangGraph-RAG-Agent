@@ -1,21 +1,19 @@
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from langchain.embeddings import init_embeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_postgres import PGVector
 from loguru import logger
 
 from app.config import settings
 
-embeddings = init_embeddings(
+embeddings = GoogleGenerativeAIEmbeddings(
     model=settings.embeddings_model_name,
-    base_url=settings.embeddings_base_url,
-    provider=settings.model_provider,
-    api_key=settings.api_key,
+    google_api_key=settings.api_key.get_secret_value(),
 )
 
 

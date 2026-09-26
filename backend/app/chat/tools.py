@@ -1,17 +1,10 @@
-from app.config import settings
 from app.db.pgvector_utils import vector_store
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from loguru import logger
 
-tavily = TavilySearchResults(
-    tavily_api_key=settings.tavily_api_key,
-    max_results=3,
-    include_answer=False,
-    include_raw_content=False,
-    include_images=False,
-)
+duckduckgo = DuckDuckGoSearchRun(max_results=3)
 
 
 @tool
@@ -33,4 +26,4 @@ async def retrieve_user_documents(query: str, config: RunnableConfig) -> str:
     return "\n\n".join([doc.page_content for doc in result_docs])
 
 
-tools = [retrieve_user_documents, tavily]
+tools = [retrieve_user_documents, duckduckgo]

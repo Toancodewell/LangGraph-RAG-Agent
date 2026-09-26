@@ -8,21 +8,27 @@ from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 from .langgraph_agent import build_retrival_graph, create_model
-from .schemas import Message, PromptInput
+from .schemas import Message, PromptInput, content_to_text
 
 
 async def simple_chat_stream(prompt_input: PromptInput) -> AsyncGenerator:
     model = create_model(model_name=prompt_input.model_name, streaming=True)
     async for chunk in model.astream([HumanMessage(content=prompt_input.prompt)]):
-        if content := chunk.content:
-            response = {"type": "llm_chunk", "content": str(content)}
+        if chunk.content:
+            text = content_to_text(chunk.content)
+            if not text:
+                continue
+            response = {"type": "llm_chunk", "content": text}
             yield json.dumps(response) + "\n"
 
-
+from loguru import logger
 async def chat_stream(thread_id: UUID, prompt_input: PromptInput, user_id: UUID) -> AsyncIterator:
     """
     Streams the agent's execution steps and final response.
     """
+    logger.info(f"CHAT PROMPT = {prompt_input.prompt!r}")
+    logger.info(f"CHAT MODEL = {prompt_input.model_name!r}")
+
     config = RunnableConfig(configurable={"thread_id": str(thread_id), "user_id": str(user_id)})
     checkpointer = await get_checkpointer()
     graph = build_retrival_graph(checkpointer, prompt_input.model_name)
@@ -44,9 +50,9 @@ async def get_chat_history(thread_id: UUID, user_id: UUID) -> list[Message]:
 
     all_messages = checkpoint.get("channel_values", {}).get("messages", [])
     messages = [
-        Message(role=message.type, content=message.content)
+        Message(role=message.type, content=content_to_text(message.content))
         for message in all_messages
         if message.content and message.type in ["human", "ai"]
     ]
 
-    return messages
+    return [m for m in messages if m.content]
